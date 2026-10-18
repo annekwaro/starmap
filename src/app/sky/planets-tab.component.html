@@ -1,0 +1,53 @@
+<header class="head">
+  <h1 class="display">Planets</h1>
+  <p class="sub">
+    The Sun, Moon and five naked-eye planets at {{ state.caption().time }} · {{ state.planetsUp() }} of 5 planets above the
+    horizon
+  </p>
+</header>
+
+<ul class="grid" role="list">
+  @for (b of state.bodyCards(); track b.key) {
+    <li class="card body-card" [class.is-up]="b.up" [style.--body]="b.color">
+      <div class="card-head">
+        <h2>{{ b.name }}</h2>
+        @if (b.up) {
+          <button type="button" class="icon-btn small light" [attr.aria-label]="'Show ' + b.name + ' on the map'" (click)="showOnMap(b.name)">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path d="M5 11l6-6M6 5h5v5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        }
+      </div>
+
+      <div class="window" aria-hidden="true">
+        <div class="ground"></div>
+        <div class="horizon-line"></div>
+        <div class="sphere-wrap" [style.top.%]="spherePosition(b.alt)">
+          @if (b.key === 'moon') {
+            <app-moon-glyph [fraction]="state.moon().fraction" [mirror]="state.moon().mirror" [size]="52" />
+          } @else {
+            <span [class]="'sphere sphere--' + b.key"></span>
+          }
+        </div>
+        <span class="alt-pill" [style.top]="b.up ? 'calc(' + spherePosition(b.alt) + '% + 28px)' : 'calc(50% - 14px)'">
+          {{ b.alt > 0 ? '' : '−' }}{{ (b.alt > 0 ? b.alt : -b.alt).toFixed(0) }}°
+        </span>
+      </div>
+
+      <span class="status" [class.is-up]="b.up">
+        <span class="dot"></span>
+        {{ b.up ? 'Above horizon' : 'Below horizon' }}
+      </span>
+
+      <dl class="facts">
+        <div><dt>Direction</dt><dd>{{ b.direction }}</dd></div>
+        <div><dt>In</dt><dd>{{ b.constellation }}</dd></div>
+        <div><dt>{{ b.events[0].label }}</dt><dd>{{ state.formatTime(b.events[0].date, true) }}</dd></div>
+        <div><dt>{{ b.events[1].label }}</dt><dd>{{ state.formatTime(b.events[1].date, true) }}</dd></div>
+        <div><dt>Magnitude</dt><dd>{{ b.mag.toFixed(1) }}</dd></div>
+        <div><dt>Distance</dt><dd>{{ b.distance }}</dd></div>
+      </dl>
+    </li>
+  }
+</ul>

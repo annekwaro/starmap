@@ -1,0 +1,70 @@
+@if (ready()) {
+  <header class="topbar">
+    <a class="icon-btn" routerLink="/" [queryParams]="editParams()" aria-label="Change date or place">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </a>
+
+    <a class="place-pill" routerLink="/" [queryParams]="editParams()">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+        <path d="M8 14s4.5-4.2 4.5-7.5a4.5 4.5 0 10-9 0C3.5 9.8 8 14 8 14z" fill="none" stroke="currentColor" stroke-width="1.4" />
+        <circle cx="8" cy="6.5" r="1.6" fill="currentColor" />
+      </svg>
+      <span class="place">{{ state.query().place }}</span>
+      <span class="when">{{ state.formatDate(state.baseDate(), 'medium') }}</span>
+      <svg class="chev" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+        <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </a>
+
+    <button type="button" class="icon-btn" [attr.aria-label]="copyState() === 'copied' ? 'Link copied' : 'Copy link to this sky'" (click)="copyLink()">
+      @if (copyState() === 'copied') {
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      } @else {
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path
+            d="M6.5 9.5l3-3M7 4.5l1-1a2.8 2.8 0 014 4l-1 1M9 11.5l-1 1a2.8 2.8 0 01-4-4l1-1"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+      }
+    </button>
+    <span class="toast" role="status">
+      @switch (copyState()) {
+        @case ('copied') { Link copied }
+        @case ('failed') { Couldn’t copy the link }
+      }
+    </span>
+  </header>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+
+  <nav class="tabbar" aria-label="Views">
+    @for (tab of tabs; track tab.path) {
+      <a
+        class="tab"
+        [routerLink]="tab.path"
+        queryParamsHandling="preserve"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="tab.match"
+        ariaCurrentWhenActive="page"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path [attr.d]="tab.icon" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span class="tab-label">{{ tab.label }}</span>
+        @if (tab.path === 'planets' && state.planetsUp() > 0) {
+          <span class="badge" [attr.aria-label]="state.planetsUp() + ' above the horizon'">{{ state.planetsUp() }}</span>
+        }
+      </a>
+    }
+  </nav>
+}

@@ -1,0 +1,100 @@
+<header class="head">
+  <h1 class="display">Sky</h1>
+  <p class="sub">
+    {{ state.stars().length }} stars · {{ state.planetsUp() }} {{ state.planetsUp() === 1 ? 'planet' : 'planets' }} above the
+    horizon
+  </p>
+</header>
+
+<section class="map-area" aria-label="Star map">
+  <app-star-map
+    [stars]="state.stars()"
+    [segments]="state.segments()"
+    [labels]="state.labels()"
+    [bodies]="state.bodies()"
+    [moon]="state.moon()"
+    [dome]="state.dome()"
+    [caption]="state.caption()"
+    [coords]="state.coords()"
+    [fileName]="state.fileName()"
+    [showLines]="state.showLines()"
+    [showNames]="state.showNames()"
+    [showPlanets]="state.showPlanets()"
+    [selectedPoint]="state.selectedInfo()"
+    (select)="state.selected.set($event)"
+  />
+</section>
+
+<aside class="panel">
+  <div class="card conditions" [attr.data-tone]="state.phase().tone">
+    <span class="orb" aria-hidden="true"></span>
+    <div>
+      <p class="kicker">Conditions</p>
+      <p class="big">{{ state.phase().label }}</p>
+      <p class="muted">
+        Sun {{ state.sunAlt() > 0 ? 'up at' : 'below horizon by' }} {{ (state.sunAlt() > 0 ? state.sunAlt() : -state.sunAlt()).toFixed(0) }}°
+        @if (state.phase().tone === 'day') {
+          · the stars were there, just hidden by daylight
+        }
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <app-time-scrubber
+      [baseDate]="state.baseDate()"
+      [timeZone]="state.query().timeZone"
+      [samples]="state.sunSamples()"
+      [(offset)]="state.offsetMinutes"
+    />
+  </div>
+
+  <div class="card selected" aria-live="polite">
+    @if (state.selectedInfo(); as info) {
+      <div class="selected-head">
+        <div>
+          <p class="kicker">{{ info.kind }}</p>
+          <p class="big">{{ info.name }}</p>
+        </div>
+        <button type="button" class="icon-btn small" aria-label="Clear selection" (click)="state.selected.set(null)">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      <dl class="stats">
+        <div><dt>In</dt><dd>{{ info.constellation }}</dd></div>
+        <div><dt>Magnitude</dt><dd>{{ info.mag.toFixed(2) }}</dd></div>
+        <div><dt>Altitude</dt><dd>{{ info.alt.toFixed(1) }}°</dd></div>
+        <div><dt>Direction</dt><dd>{{ info.direction }}</dd></div>
+      </dl>
+    } @else {
+      <p class="hint">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path d="M8 1.5l1.6 4.9 4.9 1.6-4.9 1.6L8 14.5l-1.6-4.9L1.5 8l4.9-1.6z" fill="currentColor" />
+        </svg>
+        Tap any star or planet on the map to learn about it.
+      </p>
+    }
+  </div>
+
+  <div class="card toggles" role="group" aria-label="Display">
+    @for (t of toggles; track t.label) {
+      <button type="button" class="toggle-row" role="switch" [attr.aria-checked]="t.value()" (click)="t.value.set(!t.value())">
+        <span>{{ t.label }}</span>
+        <span class="switch" aria-hidden="true"><span class="knob"></span></span>
+      </button>
+    }
+  </div>
+
+  <button type="button" class="primary" [disabled]="exportState() === 'busy'" (click)="exportPng()">
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    @switch (exportState()) {
+      @case ('busy') { Rendering poster… }
+      @case ('error') { Export failed — try again }
+      @default { Export poster PNG }
+    }
+  </button>
+</aside>

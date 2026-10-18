@@ -1,28 +1,10 @@
-import {
-  afterNextRender,
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  ElementRef,
-  inject,
-  Injector,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CITIES, MY_LOCATION_OPTION } from '../data/cities';
 import { formatCoords } from '../data/format';
-import { zonedTimeToUtc } from '../data/zoned-time';
-import { StarMapComponent } from '../star-map/star-map.component';
+import { parseQueryParams, toQueryParams } from '../sky/sky-query';
 
 type GeoStatus = 'idle' | 'locating' | 'error';
-
-interface SkyRequest {
-  lat: number;
-  lon: number;
-  date: Date;
-  timeZone: string;
-  place: string;
-}
 
 const DEFAULT_CITY = CITIES.find((c) => c.name === 'London')!;
 const BROWSER_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -35,15 +17,12 @@ function todayIso(): string {
 
 @Component({
   selector: 'app-landing',
-  imports: [StarMapComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })
 export class LandingComponent {
-  private readonly injector = inject(Injector);
-  private readonly revealButton = viewChild.required<ElementRef<HTMLButtonElement>>('revealButton');
-  private readonly starMap = viewChild(StarMapComponent);
+  private readonly router = inject(Router);
 
   readonly cities = CITIES;
   readonly myLocation = MY_LOCATION_OPTION;
@@ -62,18 +41,6 @@ export class LandingComponent {
   readonly geoStatus = signal<GeoStatus>('idle');
   readonly geoError = signal('');
   readonly geoCoords = signal<{ lat: number; lon: number } | null>(null);
-
-  // View state
-  readonly sky = signal<SkyRequest | null>(null);
-  /**
-   * The current request as a one-item list. Rendering it with @for keyed by object
-   * identity re-creates the map on every reveal, so its entrance animation replays.
-   */
-  readonly skyView = computed(() => {
-    const sky = this.sky();
-    return sky ? [sky] : [];
-  });
-  readonly showSky = signal(false);
 
   readonly myLocationLabel = computed(() => {
     const coords = this.geoCoords();
@@ -96,6 +63,25 @@ export class LandingComponent {
   readonly canReveal = computed(
     () => !!this.selectedDate() && !!this.selectedTime() && this.geoStatus() !== 'locating',
   );
+
+  constructor() {
+    // Coming back from a sky to edit it: start from what was shown.
+    const query = parseQueryParams(inject(ActivatedRoute).snapshot.queryParamMap);
+    if (!query) return;
+    this.selectedDate.set(query.date);
+    this.selectedTime.set(query.time);
+    this.selectedLat.set(query.lat);
+    this.selectedLon.set(query.lon);
+    this.selectedPlace.set(query.place);
+    this.selectedTimeZone.set(query.timeZone);
+    const city = this.cities.find((c) => c.name === query.place);
+    if (city) {
+      this.locationChoice.set(city.name);
+    } else {
+      this.locationChoice.set(this.myLocation.value);
+      this.geoCoords.set({ lat: query.lat, lon: query.lon });
+    }
+  }
 
   onLocationChange(value: string): void {
     if (value === this.myLocation.value) {
@@ -151,20 +137,15 @@ export class LandingComponent {
   reveal(event: Event): void {
     event.preventDefault();
     if (!this.canReveal()) return;
-
-    this.sky.set({
-      lat: this.selectedLat(),
-      lon: this.selectedLon(),
-      date: zonedTimeToUtc(this.selectedDate(), this.selectedTime(), this.selectedTimeZone()),
-      timeZone: this.selectedTimeZone(),
-      place: this.selectedPlace(),
+    this.router.navigate(['/sky'], {
+      queryParams: toQueryParams({
+        date: this.selectedDate(),
+        time: this.selectedTime(),
+        lat: this.selectedLat(),
+        lon: this.selectedLon(),
+        timeZone: this.selectedTimeZone(),
+        place: this.selectedPlace(),
+      }),
     });
-    this.showSky.set(true);
-    afterNextRender(() => this.starMap()?.focusBack(), { injector: this.injector });
-  }
-
-  hideSky(): void {
-    this.showSky.set(false);
-    afterNextRender(() => this.revealButton().nativeElement.focus(), { injector: this.injector });
   }
 }

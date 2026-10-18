@@ -1,0 +1,228 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.head {
+  margin-bottom: 1.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+.body-card {
+  --body: #ccc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem;
+  container-type: inline-size;
+  transition: transform 200ms ease;
+
+  @container (max-width: 220px) {
+    padding: 0.9rem;
+  }
+
+  // Bodies that are up get a wash of their own colour, like a filled container.
+  &.is-up {
+    background:
+      linear-gradient(180deg, transparent 35%, color-mix(in srgb, var(--body) 22%, transparent) 100%),
+      var(--glass);
+    border-color: color-mix(in srgb, var(--body) 28%, transparent);
+  }
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+
+  h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 9cqi, 1.5rem);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+  }
+}
+
+.window {
+  position: relative;
+  height: 150px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 0%, rgb(255 255 255 / 6%), transparent 70%);
+
+  @container (max-width: 220px) {
+    height: 120px;
+  }
+}
+
+.ground {
+  position: absolute;
+  inset: 50% 0 0;
+  background: linear-gradient(180deg, rgb(4 6 11 / 85%), rgb(4 6 11 / 95%));
+  z-index: 2;
+}
+
+.horizon-line {
+  position: absolute;
+  top: 50%;
+  left: 8%;
+  right: 8%;
+  border-top: 1px dashed rgb(255 255 255 / 22%);
+  z-index: 3;
+}
+
+.sphere-wrap,
+.alt-pill {
+  transition: top 400ms ease;
+}
+
+.sphere-wrap {
+  position: absolute;
+  left: 50%;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  transform: translate(-50%, -50%);
+}
+
+.sphere {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    color-mix(in srgb, var(--body) 35%, #fff),
+    var(--body) 45%,
+    color-mix(in srgb, var(--body) 45%, #000) 100%
+  );
+  box-shadow: 0 0 34px color-mix(in srgb, var(--body) 45%, transparent);
+
+  &--sun {
+    box-shadow:
+      0 0 40px rgb(255 201 94 / 70%),
+      0 0 90px rgb(255 160 60 / 35%);
+  }
+
+  &--jupiter {
+    background:
+      repeating-linear-gradient(
+        172deg,
+        transparent 0 7px,
+        rgb(120 70 40 / 22%) 7px 11px
+      ),
+      radial-gradient(circle at 34% 30%, #f6e2c6, var(--body) 45%, #6e5236 100%);
+  }
+
+  &--saturn {
+    position: relative;
+    width: 42px;
+    height: 42px;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 15px -16px;
+      border: 3px solid rgb(230 204 134 / 65%);
+      border-radius: 50%;
+      transform: rotate(-16deg);
+    }
+  }
+}
+
+.alt-pill {
+  position: absolute;
+  left: 50%;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: #f4f4f2;
+  color: #0b0f16;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 35%);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  align-self: flex-start;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 35%);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--faint);
+  }
+
+  &.is-up {
+    color: var(--text);
+
+    .dot {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+  }
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem 0.9rem;
+  margin: 0;
+
+  @container (max-width: 220px) {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  dt {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  dd {
+    margin: 0.15rem 0 0;
+    font-size: 0.86rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body-card,
+  .sphere-wrap,
+  .alt-pill {
+    transition: none;
+  }
+}

@@ -1,0 +1,96 @@
+<header class="head">
+  <h1 class="display">Moon</h1>
+  <p class="sub">On {{ state.caption().date }} at {{ state.caption().time }}</p>
+</header>
+
+<div class="layout">
+  <section class="card hero" aria-label="Moon phase">
+    <div class="dial">
+      <svg viewBox="-160 -160 320 320" aria-hidden="true">
+        <defs>
+          <linearGradient id="dial-arc" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#fff3cf" />
+            <stop offset="100%" stop-color="#f2c46d" />
+          </linearGradient>
+        </defs>
+        @for (t of ticks; track $index) {
+          <line
+            [attr.x1]="t.x1"
+            [attr.y1]="t.y1"
+            [attr.x2]="t.x2"
+            [attr.y2]="t.y2"
+            stroke="#fff"
+            [attr.stroke-opacity]="t.major ? 0.7 : 0.22"
+            [attr.stroke-width]="t.major ? 3 : 1.5"
+            stroke-linecap="round"
+          />
+        }
+        <circle [attr.r]="dialR" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="10" />
+        <circle
+          class="arc"
+          [attr.r]="dialR"
+          fill="none"
+          stroke="url(#dial-arc)"
+          stroke-width="10"
+          stroke-linecap="round"
+          pathLength="100"
+          [attr.stroke-dasharray]="state.moon().percent + ' 100'"
+          transform="rotate(-90)"
+        />
+        <circle class="knob" [attr.cx]="knob().x" [attr.cy]="knob().y" r="11" fill="#fff" />
+      </svg>
+      <div class="dial-moon">
+        <app-moon-glyph [fraction]="state.moon().fraction" [mirror]="state.moon().mirror" [size]="168" />
+      </div>
+    </div>
+
+    <div class="hero-text">
+      <p class="kicker">Phase</p>
+      <p class="phase">{{ state.moon().name }}</p>
+      <p class="muted">
+        <strong>{{ state.moon().percent }}%</strong> illuminated · {{ state.moon().ageDays.toFixed(1) }} days old ·
+        {{ state.moonDetails().position.up ? 'above' : 'below' }} the horizon
+      </p>
+    </div>
+  </section>
+
+  <div class="side">
+    <section class="card week" aria-labelledby="week-title">
+      <p class="kicker" id="week-title">The week around it</p>
+      <ol class="days" role="list">
+        @for (d of state.moonDetails().week; track d.offset) {
+          <li class="day" [class.is-today]="d.offset === 0" [attr.aria-current]="d.offset === 0 ? 'date' : null">
+            <span class="weekday">{{ d.weekday }}</span>
+            <span class="ring">
+              <svg viewBox="-24 -24 48 48" aria-hidden="true">
+                <circle r="20" fill="none" stroke="#fff" stroke-opacity="0.1" stroke-width="3" />
+                <circle
+                  r="20"
+                  fill="none"
+                  [attr.stroke]="d.offset === 0 ? '#f2c46d' : '#d7d2c4'"
+                  [attr.stroke-opacity]="d.offset === 0 ? 1 : 0.55"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  pathLength="100"
+                  [attr.stroke-dasharray]="d.percent + ' 100'"
+                  transform="rotate(-90)"
+                />
+              </svg>
+              <span class="pct">{{ d.percent }}%</span>
+            </span>
+            <span class="date">{{ d.day }}</span>
+          </li>
+        }
+      </ol>
+    </section>
+
+    <dl class="stat-grid">
+      @for (s of stats(); track s.label) {
+        <div class="card stat">
+          <dt>{{ s.label }}</dt>
+          <dd>{{ s.value }}</dd>
+        </div>
+      }
+    </dl>
+  </div>
+</div>
