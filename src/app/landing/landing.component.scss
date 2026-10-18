@@ -1,0 +1,250 @@
+:host {
+  display: block;
+}
+
+.stage {
+  position: relative;
+  min-height: 100dvh;
+}
+
+// Both screens are stacked; only one is visible. Hiding fades opacity first and
+// flips visibility afterwards (so it leaves the tab order); showing waits for the
+// other layer to fade before fading in.
+.layer {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 450ms ease,
+    visibility 0s linear 450ms;
+
+  &.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 700ms ease 400ms,
+      visibility 0s linear 0s;
+  }
+
+  &--sky {
+    display: block;
+    padding: 0;
+  }
+}
+
+.card {
+  width: 100%;
+  max-width: 27rem;
+  padding: clamp(1.75rem, 5vw, 2.75rem);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 30px 80px -40px rgb(0 0 0 / 80%);
+  transition: transform 450ms ease;
+
+  .layer:not(.is-visible) & {
+    transform: translateY(-8px) scale(0.99);
+  }
+}
+
+.title {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(1.75rem, 6vw, 2.35rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.lede {
+  margin: 0 0 2rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 360px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  min-width: 0;
+
+  label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+}
+
+input,
+select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.875rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  transition: border-color 150ms ease;
+
+  &:hover {
+    border-color: var(--line-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+}
+
+select {
+  appearance: none;
+  padding-right: 2.25rem;
+  text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23a9a69f' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  cursor: pointer;
+
+  option {
+    background: var(--bg);
+    color: var(--text);
+  }
+}
+
+.location {
+  display: flex;
+  gap: 0.5rem;
+
+  select {
+    flex: 1;
+  }
+}
+
+.locate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    color: var(--text);
+    border-color: var(--line-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: progress;
+  }
+
+  @media (max-width: 420px) {
+    span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+}
+
+.hint {
+  min-height: 1.2em;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--faint);
+
+  &.is-error {
+    color: var(--error);
+  }
+}
+
+.reveal {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.95rem 1.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--accent-strong);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.99);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer,
+  .layer.is-visible,
+  .card,
+  .reveal {
+    transition: none;
+  }
+
+  .layer:not(.is-visible) .card {
+    transform: none;
+  }
+}

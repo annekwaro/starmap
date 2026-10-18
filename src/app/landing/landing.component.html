@@ -1,0 +1,82 @@
+<main class="stage">
+  <section class="layer" [class.is-visible]="!showSky()">
+    <form class="card" (submit)="reveal($event)">
+      <h1 class="title">The Sky on the Night You Were Born</h1>
+      <p class="lede">Choose a moment and a place to see the stars that were overhead.</p>
+
+      <div class="row">
+        <div class="field">
+          <label for="date">Date</label>
+          <input
+            id="date"
+            type="date"
+            required
+            #dateInput
+            [value]="selectedDate()"
+            (input)="selectedDate.set(dateInput.value)"
+          />
+        </div>
+        <div class="field">
+          <label for="time">Time</label>
+          <input
+            id="time"
+            type="time"
+            required
+            #timeInput
+            [value]="selectedTime()"
+            (input)="selectedTime.set(timeInput.value)"
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="location">Location</label>
+        <div class="location">
+          <select
+            id="location"
+            #locationSelect
+            aria-describedby="location-hint"
+            (change)="onLocationChange(locationSelect.value)"
+          >
+            <option [value]="myLocation.value" [selected]="locationChoice() === myLocation.value">
+              {{ myLocationLabel() }}
+            </option>
+            @for (city of cities; track city.name) {
+              <option [value]="city.name" [selected]="locationChoice() === city.name">{{ city.name }}</option>
+            }
+          </select>
+          <button
+            type="button"
+            class="locate"
+            [disabled]="geoStatus() === 'locating'"
+            (click)="useMyLocation()"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.5" />
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <span>Use my location</span>
+          </button>
+        </div>
+        <p id="location-hint" class="hint" [class.is-error]="geoStatus() === 'error'" aria-live="polite">
+          {{ locationHint() }}
+        </p>
+      </div>
+
+      <button type="submit" class="reveal" #revealButton [disabled]="!canReveal()">Reveal the sky</button>
+    </form>
+  </section>
+
+  <section class="layer layer--sky" [class.is-visible]="showSky()">
+    @for (sky of skyView(); track sky) {
+      <app-star-map
+        [latitude]="sky.lat"
+        [longitude]="sky.lon"
+        [date]="sky.date"
+        [timeZone]="sky.timeZone"
+        [place]="sky.place"
+        (back)="hideSky()"
+      />
+    }
+  </section>
+</main>
