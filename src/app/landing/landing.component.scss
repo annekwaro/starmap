@@ -3,10 +3,12 @@
 }
 
 .stage {
+  position: relative;
   display: grid;
   place-items: center;
   min-height: 100dvh;
   padding: 1.5rem 1rem;
+  overflow: hidden;
 }
 
 .panel {
@@ -15,6 +17,86 @@
   padding: clamp(1.5rem, 5vw, 2.5rem);
   border-radius: 32px;
   box-shadow: 0 40px 90px -40px rgb(0 0 0 / 90%);
+  animation: panel-in 900ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+}
+
+// Concentric orbits behind the form, each carrying a small planet.
+.orbits {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.orbit {
+  grid-area: 1 / 1;
+  position: relative;
+  border: 1px solid rgb(255 255 255 / 6%);
+  border-radius: 50%;
+  animation: orbit 60s linear -12s infinite;
+
+  i {
+    position: absolute;
+    top: 50%;
+    left: -4px;
+    width: 8px;
+    height: 8px;
+    margin-top: -4px;
+    border-radius: 50%;
+  }
+
+  &.o1 {
+    width: min(150vw, 680px);
+    aspect-ratio: 1;
+
+    i {
+      background: var(--gold);
+      box-shadow: 0 0 16px var(--gold);
+    }
+  }
+
+  &.o2 {
+    width: min(190vw, 920px);
+    aspect-ratio: 1;
+    border-style: dashed;
+    animation-duration: 110s;
+    animation-direction: reverse;
+    animation-delay: -40s;
+
+    i {
+      width: 6px;
+      height: 6px;
+      background: var(--coral);
+      box-shadow: 0 0 12px var(--coral);
+    }
+  }
+
+  &.o3 {
+    width: min(240vw, 1180px);
+    aspect-ratio: 1;
+    border-color: rgb(255 255 255 / 4%);
+    animation-duration: 170s;
+    animation-delay: -105s;
+
+    i {
+      background: var(--violet);
+      box-shadow: 0 0 14px var(--violet);
+    }
+  }
+}
+
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .eyebrow {
@@ -45,8 +127,22 @@
   letter-spacing: -0.035em;
   text-wrap: balance;
 
-  span {
+  .word {
+    display: inline-block;
+    animation: word-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: calc(250ms + var(--i) * 60ms);
+  }
+
+  .dim {
     color: var(--faint);
+  }
+}
+
+@keyframes word-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+    filter: blur(6px);
   }
 }
 
@@ -95,16 +191,20 @@ select {
   color: var(--text);
   font: inherit;
   font-size: 0.98rem;
-  transition: border-color 150ms ease;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 200ms ease;
 
   &:hover {
     border-color: var(--line-strong);
+    background: rgb(0 0 0 / 32%);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--gold);
-    outline-offset: 1px;
-    border-color: transparent;
+    outline: none;
+    border-color: rgb(242 196 109 / 70%);
+    box-shadow: 0 0 0 4px rgb(242 196 109 / 14%);
   }
 }
 
@@ -167,12 +267,37 @@ select {
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 14px 40px -12px rgb(242 196 109 / 60%);
+  position: relative;
+  overflow: hidden;
   transition:
     transform 150ms ease,
     box-shadow 150ms ease;
 
+  // Light sweeping across on hover.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 55%) 50%, transparent 65%);
+    transform: translateX(-120%);
+    transition: transform 800ms ease;
+  }
+
   &:hover:not(:disabled) {
+    transform: translateY(-1px);
     box-shadow: 0 18px 46px -10px rgb(242 196 109 / 75%);
+
+    &::after {
+      transform: translateX(120%);
+    }
+
+    .reveal-icon {
+      transform: rotate(-25deg) scale(1.06);
+    }
+
+    .chevrons i {
+      animation-duration: 0.8s;
+    }
   }
 
   &:active:not(:disabled) {
@@ -198,6 +323,7 @@ select {
   border-radius: 50%;
   background: #1a1408;
   color: #f7dc9e;
+  transition: transform 400ms cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 
 .reveal-label {
@@ -244,5 +370,16 @@ select {
   .chevrons i {
     animation: none;
     opacity: 0.6;
+  }
+
+  .panel,
+  .orbit,
+  .headline .word {
+    animation: none;
+  }
+
+  .reveal::after,
+  .reveal-icon {
+    transition: none;
   }
 }

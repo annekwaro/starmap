@@ -11,13 +11,31 @@
   margin: 0;
 }
 
-.map {
-  display: block;
+.stage {
+  position: relative;
   // Fill the container, but leave room for the header, caption and tab bar.
   width: min(100%, max(280px, 100dvh - 22rem));
-  height: auto;
   aspect-ratio: 1;
+}
+
+.map {
+  display: block;
+  width: 100%;
+  height: 100%;
   overflow: visible;
+  // Vertical swipes still scroll the page until the map is zoomed in.
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  .is-zoomed & {
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .is-dragging & {
+    cursor: grabbing;
+  }
 }
 
 figcaption {
@@ -55,12 +73,71 @@ figcaption {
 
 .hits circle {
   cursor: pointer;
+
+  .is-dragging & {
+    cursor: grabbing;
+  }
+}
+
+// ---- Live effects
+
+.lines {
+  transition: opacity 250ms ease;
+
+  &.is-dim {
+    opacity: 0.45;
+  }
+}
+
+.hl-line {
+  stroke-dasharray: 1;
+  animation: draw-line 500ms ease-out both;
+  filter: drop-shadow(0 0 3px rgb(242 196 109 / 70%));
+}
+
+.hl-label {
+  animation: fade-in 300ms ease both;
+}
+
+.star {
+  transition: fill-opacity 200ms ease;
+
+  &.is-hovered {
+    fill-opacity: 1;
+    filter: drop-shadow(0 0 4px #fff);
+  }
+}
+
+.spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    pop-in 220ms cubic-bezier(0.3, 1.5, 0.5, 1) both,
+    spin 6s linear infinite;
 }
 
 .selection {
   transform-box: fill-box;
   transform-origin: center;
   animation: pulse 1800ms ease-in-out infinite;
+}
+
+.meteor {
+  opacity: 0;
+  animation: meteor 15s linear infinite both;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(1.8);
+  }
 }
 
 @keyframes pulse {
@@ -70,13 +147,220 @@ figcaption {
   }
 }
 
-// ---- Entrance animation (CSS-only; skipped in the PNG because it lives in CSS) ----
+@keyframes twinkle {
+  50% {
+    opacity: 0.62;
+  }
+}
+
+@keyframes meteor {
+  0% {
+    opacity: 0;
+    transform: translateX(0);
+  }
+  1% {
+    opacity: 1;
+  }
+  5% {
+    opacity: 0;
+    transform: translateX(190px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(190px);
+  }
+}
+
+// ---- Overlay: tooltip, readout, zoom controls
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tip {
+  --tint: #fff;
+  position: absolute;
+  z-index: 2;
+  min-width: 9.5rem;
+  padding: 0.6rem 0.8rem 0.65rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 14px;
+  background: rgb(14 19 31 / 82%);
+  backdrop-filter: blur(14px) saturate(150%);
+  box-shadow:
+    0 18px 40px -16px rgb(0 0 0 / 80%),
+    inset 0 1px 0 rgb(255 255 255 / 8%);
+  transform: translate(14px, calc(-100% - 12px));
+  animation: tip-in 160ms ease-out both;
+
+  &.flip-x {
+    transform: translate(calc(-100% - 14px), calc(-100% - 12px));
+  }
+
+  &.below {
+    transform: translate(14px, 12px);
+  }
+
+  &.flip-x.below {
+    transform: translate(calc(-100% - 14px), 12px);
+  }
+
+  p {
+    margin: 0;
+    white-space: nowrap;
+  }
+}
+
+.tip-kind {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.tip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tint);
+  box-shadow: 0 0 8px var(--tint);
+}
+
+.tip-name {
+  margin: 0.2rem 0 0.3rem !important;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.tip-line {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tip-cta {
+  margin-top: 0.45rem !important;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    margin-top: 4px;
+  }
+}
+
+.readout {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transition: opacity 200ms ease;
+
+  &.is-on {
+    opacity: 1;
+  }
+
+  b {
+    display: inline-block;
+    width: 2.4em;
+    font-weight: 400;
+    color: var(--faint);
+    letter-spacing: 0.1em;
+  }
+}
+
+.zoom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgb(14 19 31 / 70%);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+  opacity: 0.7;
+  transition: opacity 200ms ease;
+
+  .stage:hover &,
+  .is-zoomed &,
+  &:focus-within {
+    opacity: 1;
+  }
+}
+
+.zoom-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+
+  &:hover:not(:disabled) {
+    background: rgb(255 255 255 / 12%);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+  }
+}
+
+.zoom-level {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+// ---- Entrance animation (CSS-only; skipped in the PNG because it lives in CSS)
 
 .star,
 .halo {
   transform-box: fill-box;
   transform-origin: center;
   animation: star-in 1100ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.star.twinkle {
+  animation-name: star-in, twinkle;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1), ease-in-out;
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: both, none;
 }
 
 .line {
@@ -120,16 +404,29 @@ figcaption {
   .star,
   .halo,
   .line,
+  .hl-line,
+  .hl-label,
+  .spin,
   .moon,
   .body,
   .selection,
   .caption,
-  .coords {
+  .coords,
+  .tip {
     animation: none;
     transition: none;
   }
 
-  .line {
+  .star.twinkle {
+    animation: none;
+  }
+
+  .line,
+  .hl-line {
     stroke-dasharray: none;
+  }
+
+  .meteors {
+    display: none;
   }
 }

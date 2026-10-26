@@ -1,4 +1,10 @@
 <main class="stage">
+  <div class="orbits" aria-hidden="true">
+    <span class="orbit o1"><i></i></span>
+    <span class="orbit o2"><i></i></span>
+    <span class="orbit o3"><i></i></span>
+  </div>
+
   <form class="card panel" (submit)="reveal($event)">
     <p class="eyebrow">
       <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
@@ -6,7 +12,11 @@
       </svg>
       Star map generator
     </p>
-    <h1 class="headline">The sky on the night <span>you were born</span></h1>
+    <h1 class="headline">
+      @for (word of headline; track $index) {
+        <span class="word" [class.dim]="word.dim" [style.--i]="$index">{{ word.text }}</span>&ngsp;
+      }
+    </h1>
     <p class="lede">Choose a moment and a place. We’ll show you the stars, planets and Moon that were overhead.</p>
 
     <div class="row">

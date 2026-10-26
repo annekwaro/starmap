@@ -51,6 +51,14 @@
   display: grid;
   place-items: center;
   filter: drop-shadow(0 0 30px rgb(243 236 216 / 25%));
+  transition:
+    filter 500ms ease,
+    transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  .dial:hover & {
+    filter: drop-shadow(0 0 46px rgb(243 236 216 / 40%));
+    transform: scale(1.03) rotate(-4deg);
+  }
 }
 
 .arc {
@@ -59,7 +67,17 @@
 
 .knob {
   filter: drop-shadow(0 0 8px rgb(255 243 207 / 80%));
-  animation: fade-in 600ms ease 1100ms both;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    fade-in 600ms ease 1100ms both,
+    knob-pulse 2.4s ease-in-out 1700ms infinite;
+}
+
+@keyframes knob-pulse {
+  50% {
+    transform: scale(1.25);
+  }
 }
 
 @keyframes draw-arc {
@@ -114,6 +132,20 @@
   gap: 0.45rem;
   padding: 0.55rem 0;
   border-radius: 999px;
+  cursor: default;
+  transition:
+    background-color 200ms ease,
+    transform 300ms cubic-bezier(0.3, 1.4, 0.5, 1);
+
+  &:hover {
+    background: rgb(255 255 255 / 5%);
+    transform: translateY(-3px);
+
+    .weekday,
+    .date {
+      color: var(--text);
+    }
+  }
 
   &.is-today {
     background: rgb(255 255 255 / 7%);
@@ -168,6 +200,11 @@
 
 .stat {
   padding: 1rem 1.1rem;
+  transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+  }
 
   dt {
     font-family: var(--font-mono);
@@ -189,5 +226,12 @@
   .arc,
   .knob {
     animation: none;
+  }
+
+  .dial-moon,
+  .day,
+  .stat {
+    transition: none;
+    transform: none !important;
   }
 }

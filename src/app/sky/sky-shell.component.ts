@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, IsActiveMatchOptions, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { parseQueryParams, toQueryParams } from './sky-query';
@@ -25,6 +25,12 @@ export class SkyShellComponent {
   protected readonly ready = signal(false);
   protected readonly copyState = signal<CopyState>('idle');
   protected readonly editParams = computed(() => toQueryParams(this.state.query()));
+  /** Position of the sliding pill behind the active tab. */
+  protected readonly indicator = signal<{ left: number; width: number } | null>(null);
+
+  private activeTab: HTMLElement | null = null;
+  /** Re-measures when a tab changes size, e.g. when the planets badge appears. */
+  private readonly resizeObserver = new ResizeObserver(() => this.measureActive());
 
   protected readonly tabs = [
     { path: '.', label: 'Sky', match: EXACT, icon: 'M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z' },
@@ -44,6 +50,18 @@ export class SkyShellComponent {
         if (JSON.stringify(query) !== JSON.stringify(this.state.query())) this.state.query.set(query);
         this.ready.set(true);
       });
+    inject(DestroyRef).onDestroy(() => this.resizeObserver.disconnect());
+  }
+
+  protected trackActive(tab: HTMLElement): void {
+    this.activeTab = tab;
+    for (const el of tab.parentElement?.querySelectorAll('.tab') ?? []) this.resizeObserver.observe(el);
+    requestAnimationFrame(() => this.measureActive());
+  }
+
+  private measureActive(): void {
+    const tab = this.activeTab;
+    if (tab?.isConnected) this.indicator.set({ left: tab.offsetLeft, width: tab.offsetWidth });
   }
 
   protected async copyLink(): Promise<void> {

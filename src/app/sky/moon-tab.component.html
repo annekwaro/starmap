@@ -59,7 +59,12 @@
       <p class="kicker" id="week-title">The week around it</p>
       <ol class="days" role="list">
         @for (d of state.moonDetails().week; track d.offset) {
-          <li class="day" [class.is-today]="d.offset === 0" [attr.aria-current]="d.offset === 0 ? 'date' : null">
+          <li
+            class="day"
+            [class.is-today]="d.offset === 0"
+            [attr.aria-current]="d.offset === 0 ? 'date' : null"
+            [title]="d.weekday + ' ' + d.day + ': ' + d.percent + '% illuminated'"
+          >
             <span class="weekday">{{ d.weekday }}</span>
             <span class="ring">
               <svg viewBox="-24 -24 48 48" aria-hidden="true">

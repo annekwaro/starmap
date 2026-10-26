@@ -1,194 +1,334 @@
 <!--
   Colours inside the SVG are presentation attributes, not CSS: html2canvas serialises
-  the SVG into an image, which drops stylesheet rules. CSS here only adds animation.
+  the SVG into an image, which drops stylesheet rules. CSS here only adds animation
+  and live-only effects.
 -->
 <figure class="poster" #poster>
-  <svg
-    class="map"
-    viewBox="-40 -40 680 680"
-    role="img"
-    [attr.aria-label]="caption().text + ' ' + moon().name + '.'"
-    (click)="select.emit(null)"
-  >
-    <defs>
-      <radialGradient id="dome" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" [attr.stop-color]="dome()[0]" />
-        <stop offset="70%" [attr.stop-color]="dome()[1]" />
-        <stop offset="100%" [attr.stop-color]="dome()[2]" />
-      </radialGradient>
-      <radialGradient id="halo">
-        <stop offset="0%" stop-color="#fff" stop-opacity="0.55" />
-        <stop offset="100%" stop-color="#fff" stop-opacity="0" />
-      </radialGradient>
-      <radialGradient id="sun-glow">
-        <stop offset="0%" stop-color="#ffd27a" stop-opacity="0.7" />
-        <stop offset="100%" stop-color="#ffb347" stop-opacity="0" />
-      </radialGradient>
-      <radialGradient id="moon-lit" cx="40%" cy="35%" r="75%">
-        <stop offset="0%" stop-color="#fbf7ec" />
-        <stop offset="100%" stop-color="#d8cfb8" />
-      </radialGradient>
-      <radialGradient id="moon-glow">
-        <stop offset="40%" stop-color="#f3ecd8" stop-opacity="0.18" />
-        <stop offset="100%" stop-color="#f3ecd8" stop-opacity="0" />
-      </radialGradient>
-    </defs>
+  <div class="stage" [class.is-zoomed]="zoom() > 1.001" [class.is-dragging]="dragging()">
+    <svg
+      #svg
+      class="map"
+      [attr.viewBox]="viewBox()"
+      role="img"
+      [attr.aria-label]="caption().text + ' ' + moon().name + '.'"
+      (click)="onSkyClick()"
+      (wheel)="onWheel($event)"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp($event)"
+      (pointercancel)="onPointerUp($event)"
+      (pointerleave)="onPointerLeave($event)"
+    >
+      <defs>
+        <radialGradient id="dome" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" [attr.stop-color]="dome()[0]" />
+          <stop offset="70%" [attr.stop-color]="dome()[1]" />
+          <stop offset="100%" [attr.stop-color]="dome()[2]" />
+        </radialGradient>
+        <radialGradient id="halo">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+        </radialGradient>
+        <radialGradient id="sun-glow">
+          <stop offset="0%" stop-color="#ffd27a" stop-opacity="0.7" />
+          <stop offset="100%" stop-color="#ffb347" stop-opacity="0" />
+        </radialGradient>
+        <radialGradient id="moon-lit" cx="40%" cy="35%" r="75%">
+          <stop offset="0%" stop-color="#fbf7ec" />
+          <stop offset="100%" stop-color="#d8cfb8" />
+        </radialGradient>
+        <radialGradient id="moon-glow">
+          <stop offset="40%" stop-color="#f3ecd8" stop-opacity="0.18" />
+          <stop offset="100%" stop-color="#f3ecd8" stop-opacity="0" />
+        </radialGradient>
+        <linearGradient id="meteor" gradientUnits="userSpaceOnUse" x1="-70" y1="0" x2="0" y2="0">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0" />
+          <stop offset="100%" stop-color="#fff" stop-opacity="0.9" />
+        </linearGradient>
+        <clipPath id="dome-clip">
+          <circle [attr.cx]="center" [attr.cy]="center" [attr.r]="radius" />
+        </clipPath>
+      </defs>
 
-    <circle [attr.cx]="center" [attr.cy]="center" [attr.r]="radius" fill="url(#dome)" />
-    @for (r of rings; track r) {
-      <circle [attr.cx]="center" [attr.cy]="center" [attr.r]="r" fill="none" stroke="#fff" stroke-opacity="0.04" stroke-dasharray="2 5" />
-    }
+      <circle [attr.cx]="center" [attr.cy]="center" [attr.r]="radius" fill="url(#dome)" />
+      @for (r of rings; track r) {
+        <circle [attr.cx]="center" [attr.cy]="center" [attr.r]="r" fill="none" stroke="#fff" stroke-opacity="0.04" stroke-dasharray="2 5" />
+      }
 
-    @if (showLines()) {
-      <g fill="none" stroke="#fff" stroke-opacity="0.1" stroke-width="0.8" stroke-linecap="round">
-        @for (seg of segments(); track seg.id) {
-          <path class="line" pathLength="1" [attr.d]="seg.d" [style.animation-delay.ms]="seg.delay" />
+      @if (meteors()) {
+        <g class="meteors" clip-path="url(#dome-clip)" aria-hidden="true">
+          @for (m of meteorTrails; track $index) {
+            <g [attr.transform]="'translate(' + m.x + ' ' + m.y + ') rotate(' + m.angle + ')'">
+              <line
+                class="meteor"
+                x1="-70"
+                y1="0"
+                x2="0"
+                y2="0"
+                stroke="url(#meteor)"
+                stroke-width="1.2"
+                stroke-linecap="round"
+                [style.animation-duration.s]="m.duration"
+                [style.animation-delay.s]="m.delay"
+              />
+            </g>
+          }
+        </g>
+      }
+
+      @if (showLines()) {
+        <g
+          class="lines"
+          [class.is-dim]="activeSegments().length > 0"
+          fill="none"
+          stroke="#fff"
+          stroke-opacity="0.1"
+          [attr.stroke-width]="0.8 * k()"
+          stroke-linecap="round"
+        >
+          @for (seg of segments(); track seg.id) {
+            <path class="line" pathLength="1" [attr.d]="seg.d" [style.animation-delay.ms]="seg.delay" />
+          }
+        </g>
+      }
+
+      <!-- The hovered (or selected) star's constellation, drawn whether or not lines are on -->
+      <g class="figure-hl" fill="none" stroke="#f2c46d" stroke-opacity="0.75" [attr.stroke-width]="1.1 * k()" stroke-linecap="round">
+        @for (seg of activeSegments(); track seg.id) {
+          <path class="hl-line" pathLength="1" [attr.d]="seg.d" />
         }
       </g>
-    }
 
-    @if (showNames()) {
-      <g [attr.font-family]="sansFont" text-anchor="middle" paint-order="stroke" stroke="#05070d" stroke-width="3">
-        @for (label of labels(); track label.id) {
-          <text [attr.x]="label.x" [attr.y]="label.y" font-size="8" letter-spacing="1.6" fill="#ebe7df" fill-opacity="0.38">
+      @if (showNames()) {
+        <g [attr.font-family]="sansFont" text-anchor="middle" paint-order="stroke" stroke="#05070d" [attr.stroke-width]="3 * k()">
+          @for (label of labels(); track label.id) {
+            <text [attr.x]="label.x" [attr.y]="label.y" [attr.font-size]="8 * k()" letter-spacing="1.6" fill="#ebe7df" fill-opacity="0.38">
+              {{ label.text }}
+            </text>
+          }
+        </g>
+      }
+      <g class="figure-hl" [attr.font-family]="sansFont" text-anchor="middle" paint-order="stroke" stroke="#05070d" [attr.stroke-width]="3 * k()">
+        @for (label of activeLabels(); track label.id) {
+          <text class="hl-label" [attr.x]="label.x" [attr.y]="label.y" [attr.font-size]="8.5 * k()" letter-spacing="1.8" fill="#f2c46d">
             {{ label.text }}
           </text>
         }
       </g>
-    }
 
-    @for (star of brightStars(); track star.name) {
-      <circle
-        class="halo"
-        [attr.cx]="star.x"
-        [attr.cy]="star.y"
-        [attr.r]="star.r * 4"
-        fill="url(#halo)"
-        [attr.opacity]="0.35 * star.opacity"
-        [style.animation-delay.ms]="star.delay"
-      />
-    }
-    @for (star of stars(); track star.name) {
-      <circle
-        class="star"
-        [attr.cx]="star.x"
-        [attr.cy]="star.y"
-        [attr.r]="star.r"
-        [attr.fill]="star.color ?? '#fff'"
-        [attr.fill-opacity]="star.opacity"
-        [style.animation-delay.ms]="star.delay"
-      />
-    }
+      @for (star of brightStars(); track star.name) {
+        <circle
+          class="halo"
+          [attr.cx]="star.x"
+          [attr.cy]="star.y"
+          [attr.r]="star.r * 4 * k()"
+          fill="url(#halo)"
+          [attr.opacity]="0.35 * star.opacity"
+          [style.animation-delay.ms]="star.delay"
+        />
+      }
+      @for (star of stars(); track star.name) {
+        <circle
+          class="star"
+          [class.twinkle]="star.mag < 2"
+          [class.is-hovered]="star.name === hovered()"
+          [attr.cx]="star.x"
+          [attr.cy]="star.y"
+          [attr.r]="star.r * k()"
+          [attr.fill]="star.color ?? '#fff'"
+          [attr.fill-opacity]="star.opacity"
+          [style.animation-delay]="star.delay + 'ms, ' + (star.delay + 1100) + 'ms'"
+          [style.animation-duration]="'1100ms, ' + (3 + (star.delay % 7) * 0.6) + 's'"
+        />
+      }
 
-    @if (showNames()) {
-      <g [attr.font-family]="sansFont" font-size="8.5" fill="#ebe7df" fill-opacity="0.6">
-        @for (star of namedStars(); track star.name) {
-          <text [attr.x]="star.x + star.r + 4" [attr.y]="star.y - star.r - 2">{{ star.name }}</text>
+      @if (showNames()) {
+        <g [attr.font-family]="sansFont" [attr.font-size]="8.5 * k()" fill="#ebe7df" fill-opacity="0.6">
+          @for (star of namedStars(); track star.name) {
+            <text [attr.x]="star.x + (star.r + 4) * k()" [attr.y]="star.y - (star.r + 2) * k()">{{ star.name }}</text>
+          }
+        </g>
+      }
+
+      <!-- Sun, Moon and planets at their real positions -->
+      @for (body of visibleBodies(); track body.key) {
+        <g class="body" [attr.transform]="'translate(' + body.x + ' ' + body.y + ') scale(' + k() + ')'">
+          @switch (body.key) {
+            @case ('sun') {
+              <circle r="24" fill="url(#sun-glow)" />
+              <circle r="7" [attr.fill]="body.color" />
+            }
+            @case ('moon') {
+              <circle r="16" fill="url(#moon-glow)" />
+              <circle r="6" fill="#1b2235" />
+              <path [attr.d]="skyMoonLitPath()" fill="#f3ecd8" [attr.transform]="moon().mirror ? 'scale(-1 1)' : null" />
+            }
+            @default {
+              <circle r="12" fill="url(#halo)" opacity="0.4" />
+              <circle [attr.r]="body.key === 'venus' || body.key === 'jupiter' ? 3.6 : 2.9" [attr.fill]="body.color" />
+            }
+          }
+          <text
+            [attr.x]="body.key === 'sun' ? 12 : 9"
+            y="3"
+            [attr.font-family]="monoFont"
+            font-size="7.5"
+            letter-spacing="1"
+            [attr.fill]="body.color"
+            fill-opacity="0.85"
+          >
+            {{ body.name.toUpperCase() }}
+          </text>
+        </g>
+      }
+
+      <circle [attr.cx]="center" [attr.cy]="center" [attr.r]="radius" fill="none" stroke="#fff" stroke-opacity="0.16" />
+
+      @for (c of cardinals; track c.label) {
+        <text
+          [attr.x]="c.x"
+          [attr.y]="c.y"
+          fill="#ebe7df"
+          fill-opacity="0.45"
+          [attr.font-family]="sansFont"
+          [attr.font-size]="12 * k()"
+          letter-spacing="1.5"
+          text-anchor="middle"
+          dominant-baseline="central"
+        >
+          {{ c.label }}
+        </text>
+      }
+
+      @if (hoverPoint(); as p) {
+        <g class="hover-ring" [attr.transform]="'translate(' + p.x + ' ' + p.y + ') scale(' + k() + ')'">
+          <circle class="spin" r="11" fill="none" stroke="#f2c46d" stroke-opacity="0.85" stroke-width="1" stroke-dasharray="3 3.6" />
+        </g>
+      }
+
+      @if (selectedPoint(); as p) {
+        <g [attr.transform]="'translate(' + p.x + ' ' + p.y + ') scale(' + k() + ')'">
+          <circle class="selection" r="10" fill="none" stroke="#f2c46d" stroke-width="1.2" />
+        </g>
+      }
+
+      <!-- Generous invisible tap targets on top of everything -->
+      <g class="hits">
+        @for (star of stars(); track star.name) {
+          <circle
+            [attr.cx]="star.x"
+            [attr.cy]="star.y"
+            [attr.r]="9 * k()"
+            fill="transparent"
+            (click)="pick($event, star.name)"
+            (pointerenter)="hover($event, star.name)"
+            (pointerleave)="hover($event, null)"
+          />
+        }
+        @for (body of visibleBodies(); track body.key) {
+          <circle
+            [attr.cx]="body.x"
+            [attr.cy]="body.y"
+            [attr.r]="12 * k()"
+            fill="transparent"
+            (click)="pick($event, body.name)"
+            (pointerenter)="hover($event, body.name)"
+            (pointerleave)="hover($event, null)"
+          />
         }
       </g>
-    }
 
-    <!-- Sun, Moon and planets at their real positions -->
-    @for (body of visibleBodies(); track body.key) {
-      <g class="body" [attr.transform]="'translate(' + body.x + ' ' + body.y + ')'">
-        @switch (body.key) {
-          @case ('sun') {
-            <circle r="24" fill="url(#sun-glow)" />
-            <circle r="7" [attr.fill]="body.color" />
-          }
-          @case ('moon') {
-            <circle r="16" fill="url(#moon-glow)" />
-            <circle r="6" fill="#1b2235" />
-            <path [attr.d]="skyMoonLitPath()" fill="#f3ecd8" [attr.transform]="moon().mirror ? 'scale(-1 1)' : null" />
-          }
-          @default {
-            <circle r="12" fill="url(#halo)" opacity="0.4" />
-            <circle [attr.r]="body.key === 'venus' || body.key === 'jupiter' ? 3.6 : 2.9" [attr.fill]="body.color" />
-          }
-        }
+      <g class="moon">
+        <g [attr.transform]="'translate(' + cornerMoon.x + ' ' + cornerMoon.y + ')'">
+          <circle [attr.r]="cornerMoon.r * 2.2" fill="url(#moon-glow)" />
+          <circle [attr.r]="cornerMoon.r" fill="#1b2235" />
+          <path [attr.d]="cornerLitPath()" fill="url(#moon-lit)" [attr.transform]="moon().mirror ? 'scale(-1 1)' : null" />
+          <circle [attr.r]="cornerMoon.r" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="0.6" />
+        </g>
         <text
-          [attr.x]="body.key === 'sun' ? 12 : 9"
-          y="3"
-          [attr.font-family]="monoFont"
-          font-size="7.5"
-          letter-spacing="1"
-          [attr.fill]="body.color"
-          fill-opacity="0.85"
+          [attr.x]="cornerMoon.x + cornerMoon.r"
+          [attr.y]="cornerMoon.y + cornerMoon.r + 20"
+          fill="#ebe7df"
+          fill-opacity="0.8"
+          [attr.font-family]="serifFont"
+          font-style="italic"
+          font-size="13"
+          text-anchor="end"
         >
-          {{ body.name.toUpperCase() }}
+          {{ moon().name }}
+        </text>
+        <text
+          [attr.x]="cornerMoon.x + cornerMoon.r"
+          [attr.y]="cornerMoon.y + cornerMoon.r + 35"
+          fill="#ebe7df"
+          fill-opacity="0.45"
+          [attr.font-family]="sansFont"
+          font-size="8.5"
+          letter-spacing="1.2"
+          text-anchor="end"
+        >
+          {{ moon().percent }}% ILLUMINATED
         </text>
       </g>
-    }
+    </svg>
 
-    <circle [attr.cx]="center" [attr.cy]="center" [attr.r]="radius" fill="none" stroke="#fff" stroke-opacity="0.16" />
-
-    @for (c of cardinals; track c.label) {
-      <text
-        [attr.x]="c.x"
-        [attr.y]="c.y"
-        fill="#ebe7df"
-        fill-opacity="0.45"
-        [attr.font-family]="sansFont"
-        font-size="12"
-        letter-spacing="1.5"
-        text-anchor="middle"
-        dominant-baseline="central"
-      >
-        {{ c.label }}
-      </text>
-    }
-
-    @if (selectedPoint(); as p) {
-      <circle class="selection" [attr.cx]="p.x" [attr.cy]="p.y" r="10" fill="none" stroke="#f2c46d" stroke-width="1.2" />
-    }
-
-    <!-- Generous invisible tap targets on top of everything -->
-    <g class="hits">
-      @for (star of stars(); track star.name) {
-        <circle [attr.cx]="star.x" [attr.cy]="star.y" r="9" fill="transparent" (click)="pick($event, star.name)">
-          <title>{{ star.name }}</title>
-        </circle>
+    <!-- Live-only overlay; html2canvas skips it -->
+    <div class="overlay" data-html2canvas-ignore>
+      @if (tooltip(); as t) {
+        <div
+          class="tip"
+          role="presentation"
+          [class.flip-x]="t.flipX"
+          [class.below]="t.below"
+          [style.left.%]="t.left"
+          [style.top.%]="t.top"
+          [style.--tint]="t.info.color"
+        >
+          <p class="tip-kind"><span class="tip-dot"></span>{{ t.info.kind }}</p>
+          <p class="tip-name">{{ t.info.name }}</p>
+          @for (line of t.info.lines; track $index) {
+            <p class="tip-line">{{ line }}</p>
+          }
+          <p class="tip-cta">Click for details</p>
+        </div>
       }
-      @for (body of visibleBodies(); track body.key) {
-        <circle [attr.cx]="body.x" [attr.cy]="body.y" r="12" fill="transparent" (click)="pick($event, body.name)">
-          <title>{{ body.name }}</title>
-        </circle>
-      }
-    </g>
 
-    <g class="moon">
-      <g [attr.transform]="'translate(' + cornerMoon.x + ' ' + cornerMoon.y + ')'">
-        <circle [attr.r]="cornerMoon.r * 2.2" fill="url(#moon-glow)" />
-        <circle [attr.r]="cornerMoon.r" fill="#1b2235" />
-        <path [attr.d]="cornerLitPath()" fill="url(#moon-lit)" [attr.transform]="moon().mirror ? 'scale(-1 1)' : null" />
-        <circle [attr.r]="cornerMoon.r" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="0.6" />
-      </g>
-      <text
-        [attr.x]="cornerMoon.x + cornerMoon.r"
-        [attr.y]="cornerMoon.y + cornerMoon.r + 20"
-        fill="#ebe7df"
-        fill-opacity="0.8"
-        [attr.font-family]="serifFont"
-        font-style="italic"
-        font-size="13"
-        text-anchor="end"
-      >
-        {{ moon().name }}
-      </text>
-      <text
-        [attr.x]="cornerMoon.x + cornerMoon.r"
-        [attr.y]="cornerMoon.y + cornerMoon.r + 35"
-        fill="#ebe7df"
-        fill-opacity="0.45"
-        [attr.font-family]="sansFont"
-        font-size="8.5"
-        letter-spacing="1.2"
-        text-anchor="end"
-      >
-        {{ moon().percent }}% ILLUMINATED
-      </text>
-    </g>
-  </svg>
+      <p class="readout" [class.is-on]="readout()" aria-hidden="true">
+        @if (readout(); as r) {
+          <span><b>ALT</b> {{ r.alt }}</span>
+          <span><b>AZ</b> {{ r.az }}</span>
+        }
+      </p>
+
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button type="button" class="zoom-btn" aria-label="Zoom in" [disabled]="zoom() >= 5.99" (click)="zoomBy(1.6)">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M8 3.5v9M3.5 8h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+        <span class="zoom-level" aria-live="polite">{{ zoomLabel() }}</span>
+        <button type="button" class="zoom-btn" aria-label="Zoom out" [disabled]="zoom() <= 1.001" (click)="zoomBy(1 / 1.6)">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M3.5 8h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+        </button>
+        @if (zoom() > 1.001) {
+          <button type="button" class="zoom-btn" aria-label="Show the whole sky" (click)="resetView()">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path
+                d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
 
   <figcaption>
     <!-- Date and time are kept unbroken so the sentence wraps between phrases. -->

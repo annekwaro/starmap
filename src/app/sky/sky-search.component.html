@@ -1,0 +1,48 @@
+<div class="search" [class.is-open]="open() && results().length > 0">
+  <svg class="glass" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+    <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+    <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+  </svg>
+  <input
+    #field
+    type="text"
+    role="combobox"
+    autocomplete="off"
+    spellcheck="false"
+    placeholder="Find a star or planet"
+    aria-label="Find a star or planet"
+    aria-controls="sky-search-list"
+    aria-autocomplete="list"
+    [attr.aria-expanded]="open() && results().length > 0"
+    [attr.aria-activedescendant]="open() && results().length ? 'sky-search-' + active() : null"
+    [value]="query()"
+    (input)="onInput(field.value)"
+    (focus)="open.set(true)"
+    (blur)="onBlur()"
+    (keydown)="onKeydown($event)"
+  />
+  <kbd class="key" aria-hidden="true">/</kbd>
+</div>
+
+@if (open() && results().length > 0) {
+  <ul class="list" id="sky-search-list" role="listbox" aria-label="Matches">
+    @for (item of results(); track item.name; let i = $index) {
+      <li
+        class="option"
+        role="option"
+        [id]="'sky-search-' + i"
+        [class.is-active]="i === active()"
+        [attr.aria-selected]="i === active()"
+        [style.--tint]="item.color"
+        (pointerenter)="active.set(i)"
+        (mousedown)="$event.preventDefault()"
+        (click)="choose(item.name)"
+      >
+        <span class="dot" aria-hidden="true"></span>
+        @let p = parts(item.name);
+        <span class="name">{{ p[0] }}<mark>{{ p[1] }}</mark>{{ p[2] }}</span>
+        <span class="meta">{{ item.kind }} · {{ item.mag.toFixed(1) }}</span>
+      </li>
+    }
+  </ul>
+}

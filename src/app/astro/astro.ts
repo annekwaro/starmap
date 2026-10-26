@@ -42,6 +42,17 @@ export function project(altitude: number, azimuth: number): Point {
   return { x: MAP.center - r * Math.sin(az), y: MAP.center - r * Math.cos(az) };
 }
 
+/** Inverse of `project`: the alt/az under a map point, or null outside the dome. */
+export function unproject(x: number, y: number): { alt: number; az: number } | null {
+  const dx = MAP.center - x;
+  const dy = MAP.center - y;
+  const r = Math.hypot(dx, dy);
+  if (r > MAP.radius) return null;
+  const alt = 90 - (2 * Math.atan(r / MAP.radius)) / DEG;
+  const az = ((Math.atan2(dx, dy) / DEG) + 360) % 360;
+  return { alt, az };
+}
+
 export function compass(azimuth: number): string {
   const points = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   return points[Math.round(azimuth / 22.5) % 16];
@@ -104,8 +115,22 @@ export function starConstellation(star: Star): string {
   return Constellation(star.ra, star.dec).name;
 }
 
+/** Names of the constellation figures each star is part of. */
+const FIGURES_BY_STAR = new Map<string, string[]>();
+for (const constellation of CONSTELLATIONS) {
+  for (const name of new Set(constellation.lines.flat())) {
+    FIGURES_BY_STAR.set(name, [...(FIGURES_BY_STAR.get(name) ?? []), constellation.name]);
+  }
+}
+
+export function figuresOf(starName: string): string[] {
+  return FIGURES_BY_STAR.get(starName) ?? [];
+}
+
 export interface Segment {
   id: string;
+  /** Constellation figure this segment belongs to. */
+  figure: string;
   d: string;
   delay: number;
 }
@@ -121,6 +146,7 @@ export function constellationSegments(visible: Map<string, ProjectedStar>): Segm
         if (!a || !b) continue;
         segments.push({
           id: `${constellation.name}:${a.name}-${b.name}`,
+          figure: constellation.name,
           d: `M${a.x.toFixed(2)} ${a.y.toFixed(2)}L${b.x.toFixed(2)} ${b.y.toFixed(2)}`,
           delay: 1300 + ci * 90,
         });

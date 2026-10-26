@@ -66,11 +66,68 @@ body::before {
 // ---- Shared building blocks
 
 .card {
+  position: relative;
+  isolation: isolate;
   padding: 1.25rem;
   border: 1px solid var(--line);
   border-radius: 24px;
   background: var(--glass);
   backdrop-filter: blur(18px);
+
+  // A soft light that follows the cursor (--mx/--my are set by AppComponent),
+  // with a matching glint along the border.
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+
+  &::before {
+    z-index: -1;
+    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgb(255 255 255 / 6%), transparent 45%);
+  }
+
+  &::after {
+    padding: 1px;
+    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgb(242 196 109 / 50%), transparent 55%);
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  @media (hover: hover) {
+    &:hover::before,
+    &:hover::after {
+      opacity: 1;
+    }
+  }
+}
+
+// Keycap for shortcut hints.
+.key {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.35rem;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 5%);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+  line-height: 1;
+}
+
+::selection {
+  background: rgb(242 196 109 / 35%);
 }
 
 .display {
@@ -124,10 +181,18 @@ body::before {
   backdrop-filter: blur(16px);
   color: var(--text);
   cursor: pointer;
-  transition: border-color 150ms ease;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    transform 180ms cubic-bezier(0.3, 1.4, 0.5, 1);
 
   &:hover:not(:disabled) {
     border-color: var(--line-strong);
+    background: rgb(255 255 255 / 13%);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.92);
   }
 
   &:focus-visible {
@@ -150,6 +215,11 @@ body::before {
     border-color: transparent;
     background: #f4f4f2;
     color: #0b0f16;
+
+    &:hover:not(:disabled) {
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
   }
 }
 
@@ -168,7 +238,35 @@ body::before {
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
   box-shadow: 0 14px 40px -14px rgb(242 196 109 / 60%);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+
+  // A sheen that sweeps across on hover.
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 55%) 50%, transparent 65%);
+    transform: translateX(-120%);
+    transition: transform 700ms ease;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 46px -12px rgb(242 196 109 / 80%);
+
+    &::after {
+      transform: translateX(120%);
+    }
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0) scale(0.99);
+  }
 
   &:focus-visible {
     outline: 2px solid var(--gold);
@@ -192,7 +290,11 @@ body::before {
     animation: none;
   }
 
-  .icon-btn {
+  .icon-btn,
+  .primary,
+  .primary::after,
+  .card::before,
+  .card::after {
     transition: none;
   }
 

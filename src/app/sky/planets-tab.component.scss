@@ -29,7 +29,29 @@
   gap: 0.9rem;
   padding: 1.1rem;
   container-type: inline-size;
-  transition: transform 200ms ease;
+  transition:
+    transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 450ms ease;
+  animation: card-in 650ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms + 100ms);
+
+  // Tilts towards the cursor (--px/--py come from AppComponent).
+  @media (hover: hover) {
+    &:hover {
+      transform: perspective(900px) rotateX(calc(var(--py, 0) * -7deg)) rotateY(calc(var(--px, 0) * 9deg)) translateY(-3px);
+      box-shadow: 0 30px 60px -30px color-mix(in srgb, var(--body) 50%, #000);
+      transition-duration: 120ms, 450ms;
+
+      .sphere-wrap {
+        translate: calc(var(--px, 0) * 10px) calc(var(--py, 0) * 6px);
+      }
+
+      .sphere,
+      app-moon-glyph {
+        scale: 1.08;
+      }
+    }
+  }
 
   @container (max-width: 220px) {
     padding: 0.9rem;
@@ -90,7 +112,22 @@
 
 .sphere-wrap,
 .alt-pill {
-  transition: top 400ms ease;
+  transition:
+    top 400ms ease,
+    translate 300ms ease;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+@keyframes float {
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 .sphere-wrap {
@@ -100,6 +137,16 @@
   display: grid;
   justify-items: center;
   transform: translate(-50%, -50%);
+}
+
+.sphere,
+app-moon-glyph {
+  transition: scale 400ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.is-up .sphere,
+.is-up app-moon-glyph {
+  animation: float 5s ease-in-out infinite;
 }
 
 .sphere {
@@ -222,7 +269,14 @@
 @media (prefers-reduced-motion: reduce) {
   .body-card,
   .sphere-wrap,
-  .alt-pill {
+  .alt-pill,
+  .sphere,
+  app-moon-glyph {
     transition: none;
+    animation: none !important;
+  }
+
+  .body-card:hover {
+    transform: none !important;
   }
 }

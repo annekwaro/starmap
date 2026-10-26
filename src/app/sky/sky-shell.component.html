@@ -48,14 +48,23 @@
   </main>
 
   <nav class="tabbar" aria-label="Views">
+    <span
+      class="indicator"
+      aria-hidden="true"
+      [class.is-ready]="indicator()"
+      [style.width.px]="indicator()?.width"
+      [style.transform]="'translateX(' + (indicator()?.left ?? 0) + 'px)'"
+    ></span>
     @for (tab of tabs; track tab.path) {
       <a
+        #tabEl
         class="tab"
         [routerLink]="tab.path"
         queryParamsHandling="preserve"
         routerLinkActive="is-active"
         [routerLinkActiveOptions]="tab.match"
         ariaCurrentWhenActive="page"
+        (isActiveChange)="$event && trackActive(tabEl)"
       >
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path [attr.d]="tab.icon" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />

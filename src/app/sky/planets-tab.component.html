@@ -7,8 +7,8 @@
 </header>
 
 <ul class="grid" role="list">
-  @for (b of state.bodyCards(); track b.key) {
-    <li class="card body-card" [class.is-up]="b.up" [style.--body]="b.color">
+  @for (b of state.bodyCards(); track b.key; let i = $index) {
+    <li class="card body-card" [class.is-up]="b.up" [style.--body]="b.color" [style.--i]="i">
       <div class="card-head">
         <h2>{{ b.name }}</h2>
         @if (b.up) {

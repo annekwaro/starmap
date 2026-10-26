@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, model, signal } from '@angular/core';
 
 const SPAN = 720; // minutes either side of the requested time
+/** Playback speed: sky minutes per real second. */
+const PLAY_RATE = 60;
 
 /**
  * A 24-hour ruler centred on the requested time. The background is shaded by the
  * Sun's altitude so day, twilight and night read at a glance. Interaction is a
- * native range input, so it works with keyboard and assistive tech.
+ * native range input, so it works with keyboard and assistive tech; a play button
+ * sweeps it forward so the sky can be watched turning.
  */
 @Component({
   selector: 'app-time-scrubber',
@@ -20,6 +23,17 @@ export class TimeScrubberComponent {
   readonly offset = model(0);
 
   protected readonly span = SPAN;
+  readonly playing = signal(false);
+  /** Ruler position under the mouse, 0–100, for the ghost marker. */
+  protected readonly ghost = signal<number | null>(null);
+
+  private frame = 0;
+  /** Sub-step remainder so playback is smooth at any frame rate. */
+  private carry = 0;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => cancelAnimationFrame(this.frame));
+  }
 
   private format(date: Date, opts: Intl.DateTimeFormatOptions): string {
     return new Intl.DateTimeFormat(undefined, { timeZone: this.timeZone(), ...opts }).format(date);
@@ -32,6 +46,14 @@ export class TimeScrubberComponent {
   protected readonly current = computed(() => this.format(this.at(this.offset()), { hour: 'numeric', minute: '2-digit' }));
   protected readonly currentDay = computed(() => this.format(this.at(this.offset()), { weekday: 'long' }));
   protected readonly baseLabel = computed(() => this.format(this.baseDate(), { hour: 'numeric', minute: '2-digit' }));
+  protected readonly progress = computed(() => ((this.offset() + SPAN) / (2 * SPAN)) * 100);
+
+  protected readonly ghostLabel = computed(() => {
+    const x = this.ghost();
+    if (x === null) return null;
+    const offset = Math.round(((x / 100) * 2 * SPAN - SPAN) / 5) * 5;
+    return this.format(this.at(offset), { hour: 'numeric', minute: '2-digit' });
+  });
 
   protected readonly relative = computed(() => {
     const m = this.offset();
@@ -97,6 +119,58 @@ export class TimeScrubberComponent {
   });
 
   protected onInput(value: string): void {
+    this.stop();
     this.offset.set(Number(value));
+  }
+
+  protected onRulerMove(event: PointerEvent): void {
+    if (event.pointerType !== 'mouse') return;
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    this.ghost.set(Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)));
+  }
+
+  protected onRulerLeave(): void {
+    this.ghost.set(null);
+  }
+
+  // ---- Playback
+
+  toggle(): void {
+    if (this.playing()) this.stop();
+    else this.play();
+  }
+
+  /** Nudge the time by whole minutes, e.g. from a keyboard shortcut. */
+  step(minutes: number): void {
+    this.stop();
+    this.offset.set(Math.min(SPAN, Math.max(-SPAN, this.offset() + minutes)));
+  }
+
+  private play(): void {
+    if (this.offset() >= SPAN) this.offset.set(-SPAN);
+    this.playing.set(true);
+    this.carry = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      this.carry += ((now - last) / 1000) * PLAY_RATE;
+      last = now;
+      const whole = Math.floor(this.carry);
+      if (whole > 0) {
+        this.carry -= whole;
+        const next = Math.min(SPAN, this.offset() + whole);
+        this.offset.set(next);
+        if (next >= SPAN) {
+          this.stop();
+          return;
+        }
+      }
+      this.frame = requestAnimationFrame(tick);
+    };
+    this.frame = requestAnimationFrame(tick);
+  }
+
+  stop(): void {
+    cancelAnimationFrame(this.frame);
+    this.playing.set(false);
   }
 }

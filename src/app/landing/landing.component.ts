@@ -25,6 +25,8 @@ export class LandingComponent {
   private readonly router = inject(Router);
 
   readonly cities = CITIES;
+  /** Split into words so they can rise in one by one; the last three are dimmed. */
+  readonly headline = 'The sky on the night you were born'.split(' ').map((text, i, all) => ({ text, dim: i >= all.length - 3 }));
   readonly myLocation = MY_LOCATION_OPTION;
 
   // Form state

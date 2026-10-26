@@ -20,13 +20,16 @@
     [showLines]="state.showLines()"
     [showNames]="state.showNames()"
     [showPlanets]="state.showPlanets()"
+    [meteors]="state.phase().tone === 'night'"
     [selectedPoint]="state.selectedInfo()"
     (select)="state.selected.set($event)"
   />
 </section>
 
 <aside class="panel">
-  <div class="card conditions" [attr.data-tone]="state.phase().tone">
+  <app-sky-search class="rise" style="--i: 0" [items]="searchItems()" (picked)="flyTo($event)" />
+
+  <div class="card conditions rise" style="--i: 1" [attr.data-tone]="state.phase().tone">
     <span class="orb" aria-hidden="true"></span>
     <div>
       <p class="kicker">Conditions</p>
@@ -40,7 +43,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card rise" style="--i: 2">
     <app-time-scrubber
       [baseDate]="state.baseDate()"
       [timeZone]="state.query().timeZone"
@@ -49,45 +52,63 @@
     />
   </div>
 
-  <div class="card selected" aria-live="polite">
-    @if (state.selectedInfo(); as info) {
-      <div class="selected-head">
-        <div>
-          <p class="kicker">{{ info.kind }}</p>
-          <p class="big">{{ info.name }}</p>
+  <div class="card selected rise" style="--i: 3" aria-live="polite">
+    @for (info of selection(); track info.name) {
+      <div class="selected-body">
+        <div class="selected-head">
+          <div>
+            <p class="kicker">{{ info.kind }}</p>
+            <p class="big">{{ info.name }}</p>
+          </div>
+          <div class="selected-actions">
+            <button type="button" class="icon-btn small" aria-label="Zoom to it on the map" title="Zoom to it" (click)="flyTo(info.name)">
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                <circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.5" />
+                <path d="M8 1.5v2.5M8 12v2.5M1.5 8H4M12 8h2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </button>
+            <button type="button" class="icon-btn small" aria-label="Clear selection" (click)="state.selected.set(null)">
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <button type="button" class="icon-btn small" aria-label="Clear selection" (click)="state.selected.set(null)">
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          </svg>
-        </button>
+        <dl class="stats">
+          <div><dt>In</dt><dd>{{ info.constellation }}</dd></div>
+          <div><dt>Magnitude</dt><dd>{{ info.mag.toFixed(2) }}</dd></div>
+          <div><dt>Altitude</dt><dd>{{ info.alt.toFixed(1) }}°</dd></div>
+          <div><dt>Direction</dt><dd>{{ info.direction }}</dd></div>
+        </dl>
+        <div class="alt-meter" aria-hidden="true">
+          <span class="alt-fill" [style.width.%]="(info.alt / 90) * 100"></span>
+          <span class="alt-tick">Horizon</span>
+          <span class="alt-tick end">Zenith</span>
+        </div>
       </div>
-      <dl class="stats">
-        <div><dt>In</dt><dd>{{ info.constellation }}</dd></div>
-        <div><dt>Magnitude</dt><dd>{{ info.mag.toFixed(2) }}</dd></div>
-        <div><dt>Altitude</dt><dd>{{ info.alt.toFixed(1) }}°</dd></div>
-        <div><dt>Direction</dt><dd>{{ info.direction }}</dd></div>
-      </dl>
-    } @else {
+    } @empty {
       <p class="hint">
         <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
           <path d="M8 1.5l1.6 4.9 4.9 1.6-4.9 1.6L8 14.5l-1.6-4.9L1.5 8l4.9-1.6z" fill="currentColor" />
         </svg>
-        Tap any star or planet on the map to learn about it.
+        <span>Hover or tap any star to explore. Scroll or pinch to zoom, drag to pan.</span>
       </p>
     }
   </div>
 
-  <div class="card toggles" role="group" aria-label="Display">
+  <div class="card toggles rise" style="--i: 4" role="group" aria-label="Display">
     @for (t of toggles; track t.label) {
       <button type="button" class="toggle-row" role="switch" [attr.aria-checked]="t.value()" (click)="t.value.set(!t.value())">
         <span>{{ t.label }}</span>
-        <span class="switch" aria-hidden="true"><span class="knob"></span></span>
+        <span class="toggle-end">
+          <kbd class="key" aria-hidden="true">{{ t.key }}</kbd>
+          <span class="switch" aria-hidden="true"><span class="knob"></span></span>
+        </span>
       </button>
     }
   </div>
 
-  <button type="button" class="primary" [disabled]="exportState() === 'busy'" (click)="exportPng()">
+  <button type="button" class="primary rise" style="--i: 5" [disabled]="exportState() === 'busy'" (click)="exportPng()">
     <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
       <path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
@@ -97,4 +118,33 @@
       @default { Export poster PNG }
     }
   </button>
+
+  <button type="button" class="shortcuts-link rise" style="--i: 6" (click)="openShortcuts()">
+    <kbd class="key" aria-hidden="true">?</kbd> Keyboard shortcuts
+  </button>
 </aside>
+
+<dialog #sheet class="sheet" aria-labelledby="shortcuts-title" (click)="$event.target === sheet && sheet.close()">
+  <div class="sheet-body">
+    <div class="sheet-head">
+      <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+      <button type="button" class="icon-btn small" aria-label="Close" (click)="sheet.close()">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+    <dl class="shortcut-list">
+      @for (s of shortcuts; track s.label) {
+        <div>
+          <dt>
+            @for (k of s.keys; track k) {
+              <kbd class="key">{{ k }}</kbd>
+            }
+          </dt>
+          <dd>{{ s.label }}</dd>
+        </div>
+      }
+    </dl>
+  </div>
+</dialog>
